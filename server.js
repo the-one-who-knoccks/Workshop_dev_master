@@ -1,105 +1,86 @@
-
-// Usei o express para criar o configurar meu servidor
-const express = require("express")
-const server = express();
+// Using the express to create and setting the server
+const express = require('express');
+const server = express()
 
 const db = require("./db");
 
-// const ideas = [
-//   {
-//     img: "https://image.flaticon.com/icons/svg/2728/2728923.svg",
-//     title: "Curso de programação",
-//     category: "Estudo",
-//     description: "Lorem ipsum dolor, sit amet consectetur adipisicing elit. Id.",
-//     url: "https://rocketseat.com.br"
-//   },
+// Setting static files (css, scripts, images)
+server.use(express.static("public"));
 
-//   {
-//     img: "https://image.flaticon.com/icons/svg/2728/2728799.svg",
-//     title: "Jogar video-game",
-//     category: "Diversão",
-//     description: "Lorem ipsum dolor, sit amet consectetur adipisicing elit. Id.",
-//     url: "https://rocketseat.com.br"
-//   },
+// Allow request.body use
+server.use(express.urlencoded({ extended: true}));
 
-//   {
-//     img: "https://image.flaticon.com/icons/svg/2728/2728923.svg",
-//     title: "Curso de programação",
-//     category: "Estudo",
-//     description: "Lorem ipsum dolor, sit amet consectetur adipisicing elit. Id.",
-//     url: "https://rocketseat.com.br"
-//   },
-
-//   {
-//     img: "https://image.flaticon.com/icons/svg/2728/2728799.svg",
-//     title: "Jogar video-game",
-//     category: "Diversão",
-//     description: "Lorem ipsum dolor, sit amet consectetur adipisicing elit. Id.",
-//     url: "https://rocketseat.com.br"
-//   },
-// ]
-
-// Configurar arquivos estáticos (css, scripts, imagens)
-
-server.use(express.static("public"))
-
-// Configuração do nunjucks
-
-const nunjucks = require("nunjucks");
-
+// Settinf nunjucks
+const nunjucks = require('nunjucks')
 nunjucks.configure("views", {
-  express: server,
-  noCache: true,  // desabilita o cache do nunjucks
+    express : server,
+    noCache: true,
 });
 
+// Creating router "/" and catching the user request
+server.get('/', function(request, response){
 
+    db.all(`SELECT * FROM ideas`, function(err, rows){
+        if (err) {
+            console.log(err)
+            return response.send("Erro no Banco de Dados!")
+        }
 
-// Criei um rota
-// Aqui eu capturo o pedido do cliente para responder
-server.get("/", function (req, res) {
+        const reversedIdeas = [...rows].reverse()
 
-  db.all(`SELECT * FROM ideas`, function (err, rows) {
-    if (err) {
-      console.log(err)
-      return res.send("Erro no banco de dados");
-    }
+        let lastIdeas = []
+        for (let idea of reversedIdeas) {
+            if(lastIdeas.length < 3){
+                lastIdeas.push(idea)
+            }
+        }
 
-    const reversedIdeas = [...rows].reverse();
-
-    let lastIdeas = [];
-    for (let idea of reversedIdeas) {
-      if (lastIdeas.length < 2) {
-        lastIdeas.push(idea);
-      }
-    }
-
-    // lastIdeas = lastIdeas.reverse()
-
-    return res.render("index.html", { ideas: lastIdeas });
-  })
-
-
+        return response.render('index.html', { ideas: lastIdeas });
+    });
 });
 
-server.get("/ideas", function (req, res) {
+server.get('/ideas', function(request, response){
+    db.all(`SELECT * FROM ideas`, function(err, rows){
+        if (err) {
+            console.log(err)
+            return response.send("Erro no Banco de Dados!")
+        }
 
-  db.all(`SELECT * FROM ideas`, function (err, rows) {
-    if (err) {
-      console.log(err)
-      return res.send("Erro no banco de dados");
-    }
+        const reversedIdeas = [...rows].reverse()
+        return response.render('ideas.html', { ideas: reversedIdeas });
+    });
+});
 
-    const reversedIdeas = [...rows].reverse();
+server.post('/', function(request, response) {
+    
+    const query = `
+    INSERT INTO ideas(
+        image,
+        title,
+        category,
+        description,
+        link
+    ) VALUES (?,?,?,?,?);
+    `
 
-    return res.render("ideas.html", { ideas: reversedIdeas.reverse() });
-  });
+    const values = [
+        request.body.image,
+        request.body.title,
+        request.body.category,
+        request.body.description,
+        request.body.link,
+    ]
 
+    db.run(query,values, function(err) {
+        if (err) {
+            console.log(err)
+            return response.send("Erro no Banco de Dados!");
+        }
 
-})
+        return response.redirect('/ideas');
+    });
+});
 
-
-// Servidor ligado na porta 3000
-server.listen(3000);
-
+// Starting the server on port 3000
+server.listen(3000)
 console.log("🚀 Server started 🚀");
-
