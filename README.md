@@ -14,7 +14,7 @@ Fábrica de ideias
 
 [//]: # (Add your gifs/images here:)
 <div>
-  <img src="/preview/preview.gif" alt="demo" height="430">
+  <img src="/preview/preview.gif" alt="demo" height="600">
 </div>
 
 <hr />
